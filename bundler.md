@@ -811,3 +811,372 @@ Build system
 全部入りプラットフォーム。
 昔の「Reactライブラリ」感とはかなり違う。
 ちょっとOS化してる。
+
+そうそう、Viteって「フレームワーク」じゃなくて基本は
+
+> ビルドツール + 開発サーバー
+
+なんだよね。
+
+でもここがややこしくて、現代は
+
+```text id="8n7j0w"
+Bundler
+Compiler
+Dev Server
+Build Tool
+Framework
+```
+
+の境界がかなり溶けてる。
+
+だから混乱しやすい。
+
+---
+
+# まず整理
+
+## React
+
+UIライブラリ。
+
+```tsx id="5p4x0r"
+function Button() {
+  return <button>Hello</button>
+}
+```
+
+を書くもの。
+
+---
+
+## Next.js
+
+Reactを使った“アプリフレームワーク”。
+
+* routing
+* SSR
+* server actions
+* backend
+* build
+* deploy最適化
+
+まで含む。
+
+---
+
+## Vite
+
+アプリを“動かす・変換する”ための基盤。
+
+つまり：
+
+* 開発サーバー
+* HMR
+* build
+* plugin
+* transform
+
+担当。
+
+---
+
+# 例えると
+
+## React
+
+「レゴブロック」
+
+---
+
+## Vite
+
+「電動工具」
+
+---
+
+## Next.js
+
+「家を建てる工法そのもの」
+
+みたいな感じ。
+
+---
+
+# Vite単体ではアプリ構造を決めない
+
+Viteは：
+
+```bash id="lh13y4"
+vite
+```
+
+だけでは、
+
+* routing
+* SSR
+* data fetching
+
+とか持ってない。
+
+---
+
+だから普通は：
+
+```text id="9wh9mv"
+React + Vite
+Vue + Vite
+Svelte + Vite
+```
+
+みたいに使う。
+
+---
+
+# Viteが実際にやってること
+
+これが重要。
+
+Viteは開発時、
+
+## ブラウザにESMをそのまま渡す
+
+例えば：
+
+```js id="mjjjvs"
+import { foo } from "./foo.js"
+```
+
+をbundleせずそのまま送る。
+
+---
+
+# Webpack時代
+
+保存すると：
+
+```text id="40y9es"
+全部再bundle
+↓
+再起動
+```
+
+だった。
+
+---
+
+# Vite時代
+
+変更ファイルだけ変換。
+
+```text id="z4mn2l"
+foo.ts だけ再変換
+```
+
+超速い。
+
+---
+
+# じゃあViteはバンドラーじゃないの？
+
+ここが微妙。
+
+## 開発時
+
+ほぼ「ノーバンドル」。
+
+---
+
+## build時
+
+実は内部で
+[Rollup](https://rollupjs.org/?utm_source=chatgpt.com) を使ってbundleする。
+
+つまり：
+
+```text id="m0z9jg"
+dev:
+  ESM server
+
+build:
+  Rollup bundling
+```
+
+のハイブリッド。
+
+---
+
+# だからViteは本当は
+
+```text id="9y2d8j"
+Build Orchestrator
+```
+
+に近い。
+
+---
+
+# さらに最近は…
+
+Vite自身も：
+
+* esbuild
+* Rollup
+* plugin pipeline
+
+を組み合わせてる。
+
+つまり：
+
+```text id="w0gxgq"
+Vite
+ ├ Dev Server
+ ├ HMR Engine
+ ├ Plugin System
+ ├ esbuild
+ └ Rollup
+```
+
+みたいな構成。
+
+---
+
+# Next.jsとの根本的違い
+
+ここ超重要。
+
+---
+
+## Next.js
+
+「アプリのルール」を持つ。
+
+```text id="xf1j2s"
+app/
+layout.tsx
+page.tsx
+```
+
+とか。
+
+---
+
+## Vite
+
+ルールを持たない。
+
+ただ：
+
+```text id="v1j0px"
+「変換・配信・buildするよ」
+```
+
+だけ。
+
+---
+
+# だから自由度が高い
+
+Viteは：
+
+* React
+* Vue
+* Solid
+* Lit
+* Vanilla JS
+
+全部いける。
+
+---
+
+# 逆にNext.jsは制約が強い
+
+でもその代わり：
+
+* SSR
+* streaming
+* edge
+* cache
+* RSC
+
+まで全部統合。
+
+---
+
+# 今のイメージ
+
+## Vite系
+
+```text id="6lrn1m"
+好きに組み立てる
+```
+
+軽量・高速・柔軟。
+
+---
+
+## Next.js系
+
+```text id="kgf6yh"
+全部入り統合環境
+```
+
+規約強め・巨大。
+
+---
+
+# だから最近よくある構図
+
+## 小〜中規模
+
+```text id="8jhmn2"
+React + Vite
+```
+
+快適。
+
+---
+
+## 大規模Webサービス
+
+```text id="83e89o"
+Next.js
+```
+
+SSRとかbackend統合が便利。
+
+---
+
+# 面白いところ
+
+実は最近、
+
+## Next.js
+
+「Viteみたいな爆速開発体験ほしい」
+
+↓
+
+Turbopackへ
+
+---
+
+## Vite系
+
+「SSRとかroutingも欲しい」
+
+↓
+
+Nuxt / SvelteKit / Remix系へ
+
+---
+
+って感じで、
+両者が互いに近づいてる。
+
+最終的には、
+
+> “高速な統合アプリプラットフォーム”
+
+に収束しそうな空気あるんだよね。
+
