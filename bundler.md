@@ -1,5 +1,296 @@
 # Bundler
 
+## バンドラーとは
+
+今のバンドラーって、単に「ファイルをまとめるツール」じゃなくて、
+
+> “ブラウザが理解しやすい形に、アプリ全体を変換するシステム”
+
+になってる。
+ざっくり言うと、今のバンドラーはこのへん全部やってる
+
+### 1. 依存関係を解析する
+
+まずimportを全部辿る。
+
+```js
+import { foo } from "./foo"
+import React from "react"
+```
+
+↓
+
+```text
+app.tsx
+ ├ foo.ts
+ ├ react
+ └ button.tsx
+      └ style.css
+```
+
+みたいな巨大グラフを作る。
+これが「モジュールグラフ」。
+
+### 2. ファイル変換（transpile）
+
+ブラウザがそのまま理解できないものを変換。
+
+例えば：
+
+#### TypeScript
+
+```ts
+const x: number = 1
+```
+
+↓
+
+```js
+const x = 1
+```
+
+#### JSX
+
+```jsx
+<Button />
+```
+
+↓
+
+```js
+React.createElement(...)
+```
+
+あるいはReact Compiler系の別形式。
+
+#### SCSS
+
+```scss
+$color: red;
+```
+
+↓
+
+```css
+color:red;
+```
+
+### 3. node_modules解決
+
+これ超重要。
+
+```js
+import React from "react"
+```
+
+って、実はブラウザには意味不明。
+
+バンドラーが：
+
+```text
+node_modules/react/index.js
+```
+
+とかを探して解決してる。
+Nodeのmodule resolutionを再現してる感じ。
+
+### 4. Tree Shaking
+
+使ってないコードを消す。
+
+```js
+import { a, b } from "./utils"
+```
+
+で `a` しか使ってなければ、`b` 関連を削除。
+これがないとbundleサイズ爆増する。
+
+### 5. Code Splitting
+
+巨大アプリを分割。
+
+昔：
+
+```text
+app.js (10MB)
+```
+
+今：
+
+```text
+home.chunk.js
+admin.chunk.js
+settings.chunk.js
+```
+
+必要時だけロード。
+
+```js
+const Admin = lazy(() => import("./Admin"))
+```
+
+とか。
+
+### 6. Asset管理
+
+JSだけじゃない。
+
+#### 画像
+
+```js
+import logo from "./logo.png"
+```
+
+↓
+
+```text
+/assets/logo.a1b2c3.png
+```
+
+に変換。
+
+#### CSS
+
+```js
+import "./style.css"
+```
+
+↓
+
+別CSSファイル生成。
+
+#### Font/SVG/WebWorker
+
+全部処理する。
+
+### 7. 最適化
+
+ここが本番ビルドの本体。
+
+#### Minify
+
+```js
+function hello(name) {
+  console.log(name)
+}
+```
+
+↓
+
+```js
+function hello(o){console.log(o)}
+```
+
+#### Dead Code Elimination
+
+絶対呼ばれないコード削除。
+
+#### 定数埋め込み
+
+```js
+if (process.env.NODE_ENV === "development")
+```
+
+↓
+
+```js
+if(false)
+```
+
+↓
+
+消える。
+
+### 8. 開発サーバー
+
+今はここが超重要。
+
+#### HMR (Hot Module Reload)
+
+保存した瞬間：
+
+```text
+変更ファイルだけ差し替え
+```
+
+React state維持したまま更新。
+昔は毎回ページリロードしてた。
+地獄。
+
+### 9. ESM と CommonJS の橋渡し
+
+現代 JS、モジュール方式が混在してる。
+
+* CommonJS
+* ESModules
+* UMD
+* IIFE
+
+全部いる
+バンドラーはそれを繋ぐ翻訳機。
+
+### 10. Runtime生成
+
+Webpack系は小さいランタイムも作る。
+
+例えば：
+
+```text
+chunk読み込み管理
+module cache
+dynamic import制御
+```
+
+みたいなの。
+
+### 現代バンドラーの実態
+
+今のバンドラーって実質：
+
+| 機能              | 内容       |
+| --------------- | -------- |
+| Compiler        | TS/JSX変換 |
+| Linker          | import解決 |
+| Optimizer       | 圧縮・削除    |
+| Asset Pipeline  | CSS/画像処理 |
+| Dev Server      | HMR      |
+| Runtime Builder | chunk管理  |
+
+全部入り。
+もはや“小さなOS”みたいになってる。
+
+だから最近は逆に、
+
+> 「全部バンドラーがやる必要ある？」
+
+って思想も強くなってる。
+
+例えば：
+
+* ブラウザネイティブESM
+* import maps
+* edge runtime
+* server components
+
+とかは、
+
+「バンドラー依存を減らそう」
+
+という流れでもある。
+
+面白いのは、
+Webpack時代は
+
+> “ブラウザを抽象化する”
+
+だったのに、
+
+最近は
+
+> “ブラウザを信頼する”
+
+方向に戻ってることなんだよね。
+
 ## 歴史
 
 最初のころのWebって、JavaScriptファイルをそのまま `<script>` で読み込むだけだったんだよね。
