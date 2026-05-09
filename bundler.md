@@ -588,3 +588,226 @@ Vite以降
 Web技術って、
 「複雑化してからシンプルに戻る」
 を周期的に繰り返すんだよね。
+
+かなり密接。
+
+## フレームワークとの関係
+
+今のフロントエンドって、
+
+> フレームワークが「何を作るか」を決めて、
+> バンドラーが「どう動かすか」を決める
+
+みたいな関係になってる。
+
+昔は分離してた。
+
+```text id="rj74h7"
+React
++ Webpack
++ Babel
++ ESLint
++ DevServer
++ Router
+```
+
+全部自分で組み合わせ。
+“俺のwebpack.config.jsを見ろ”時代。
+
+でも今のNext.jsとかは、
+
+> フレームワークの中にバンドラーが内蔵されてる
+
+感じ。
+
+### Next.jsの場合
+
+[Next.js](https://nextjs.org) はReactフレームワークだけど、内部では大量のビルド処理をやってる。
+
+例えば：
+
+```tsx id="9g0o5m"
+export default function Page() {
+  return <div>Hello</div>
+}
+```
+
+これを書くと裏で：
+
+* React変換
+* Server Component判定
+* Client Component分離
+* Route生成
+* chunk分割
+* CSS抽出
+* 最適化
+* hydrationコード生成
+
+とかが動く。
+かなり魔法。
+
+### つまり役割分担はこう
+
+| 層       | 役割        |
+| ------- | --------- |
+| React   | UIを書く     |
+| Next.js | アプリ構造を決める |
+| バンドラー   | 実行可能にする   |
+
+### フレームワークは“バンドラーの司令塔”
+
+Next.jsって実は：
+
+```text id="n6e0bx"
+「このファイルはサーバー用」
+「これはクライアント」
+「これは後でlazy load」
+「これはedge向け」
+```
+
+を全部解析してる。
+で、その情報をバンドラーに渡す。
+
+### Webpack時代のNext.js
+
+昔のNext.jsはWebpackベースだった。
+
+つまり：
+
+```text id="4zjz9h"
+Next.js
+  ↓
+Webpackを内部利用
+```
+
+だった。
+ユーザーはWebpack設定を直接触らなくてよかった。
+これが人気の理由の一つ。
+「設定地獄からの解放」。
+
+### でも最近は変わってきた
+
+Next.jsはWebpack依存を減らしてる。
+
+#### SWC
+
+Rust製コンパイラ。
+
+* TypeScript変換
+* JSX変換
+* minify
+
+を高速化。
+
+#### Turbopack
+
+[Turbopack](https://turbo.build/pack?utm_source=chatgpt.com)
+
+Webpack作者が作ってる次世代バンドラー。
+Next.js専用に近い。
+
+### なぜ専用化するの？
+
+ここ面白い。
+
+Webpackは：
+
+> “どんなJSアプリにも対応”
+
+する汎用設計だった。
+
+でもNext.js側からすると、
+
+```text id="i0s3c9"
+pages/
+app/
+server components
+edge runtime
+```
+
+みたいな独自ルールが大量にある。
+
+だから：
+
+> 「Next専用に最適化した方が速い」
+
+になった。
+
+### Vite系との違い
+
+[Vite](https://vite.dev) 系は逆に：
+
+> “フレームワークより開発体験”
+
+を重視。
+
+だから：
+
+* Vue
+* React
+* Svelte
+* Solid
+
+全部に対応。
+フレームワークから少し独立してる。
+
+### 今の構図
+
+ざっくり：
+
+```text id="ah0n4v"
+Framework
+    ↓ 指示
+Bundler / Compiler
+    ↓
+Browser
+```
+
+なんだけど、
+最近は境界が曖昧。
+
+### React Server Componentsでさらに融合
+
+最近のNext.jsは特にすごい。
+
+```tsx id="v0cqcz"
+async function Page() {
+  const data = await db.query()
+}
+```
+
+みたいなコードを書くと、
+
+* サーバーで実行
+* クライアントに送る部分だけ抽出
+* serialization
+* streaming
+
+をビルド時に解析してる。
+
+つまり：
+
+> “フレームワークの設計”と
+> “バンドラーの設計”
+
+が完全に融合してきてる。
+
+だから今のNext.jsって実態としては：
+
+```text id="axvcvw"
+React framework
++
+Compiler
++
+Bundler
++
+Server runtime
++
+Router
++
+Build system
+```
+
+全部入りプラットフォーム。
+昔の「Reactライブラリ」感とはかなり違う。
+ちょっとOS化してる。
